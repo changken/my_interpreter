@@ -1,4 +1,5 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 while (true)
 {

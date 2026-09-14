@@ -1,5 +1,6 @@
 using System.Globalization;
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
@@ -18,8 +19,7 @@ public class LexerNumberTests
         List<Token> tokens = LexerTestHelper.Tokenize(input);
 
         Assert.Equal(2, tokens.Count);
-        Assert.Equal(expectedType, tokens[0].Type);
-        Assert.Equal(expectedLiteral, tokens[0].Literal);
+        Assert.Equal(new Token(expectedType, expectedLiteral, 1, 1), tokens[0]);
         Assert.Equal(TokenType.Eof, tokens[1].Type);
     }
 
@@ -37,8 +37,7 @@ public class LexerNumberTests
         List<Token> tokens = LexerTestHelper.Tokenize(input);
 
         Assert.Equal(2, tokens.Count);
-        Assert.Equal(TokenType.Illegal, tokens[0].Type);
-        Assert.Equal(expectedLiteral, tokens[0].Literal);
+        Assert.Equal(new Token(TokenType.Illegal, expectedLiteral, 1, 1), tokens[0]);
         Assert.Equal(TokenType.Eof, tokens[1].Type);
     }
 
@@ -46,10 +45,7 @@ public class LexerNumberTests
     public void Tokenize_IntegerLiteralOverflowingLong_ProducesIllegal()
     {
         const string tooLarge = "99999999999999999999";
-        List<Token> tokens = LexerTestHelper.Tokenize(tooLarge);
-
-        Assert.Equal(TokenType.Illegal, tokens[0].Type);
-        Assert.Equal(tooLarge, tokens[0].Literal);
+        LexerTestHelper.AssertToken(tooLarge, 0, new Token(TokenType.Illegal, tooLarge, 1, 1));
     }
 
     [Fact]
@@ -60,10 +56,7 @@ public class LexerNumberTests
         {
             CultureInfo.CurrentCulture = new CultureInfo("de-DE");
 
-            List<Token> tokens = LexerTestHelper.Tokenize("3.14");
-
-            Assert.Equal(TokenType.Float, tokens[0].Type);
-            Assert.Equal("3.14", tokens[0].Literal);
+            LexerTestHelper.AssertToken("3.14", 0, new Token(TokenType.Float, "3.14", 1, 1));
         }
         finally
         {

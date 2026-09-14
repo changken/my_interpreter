@@ -124,7 +124,8 @@ public delegate LumenValue BuiltinFn(IReadOnlyList<LumenValue> args);
 ```
 src/
   Lumen.Core/
-    Lexing/        TokenType.cs, Token.cs, Lexer.cs
+    Tokens/        TokenType.cs, Token.cs
+    Lexing/        Lexer.cs
     Ast/           Node.cs, Expressions.cs, Statements.cs
     Parsing/       Precedence.cs, ParseError.cs, Parser.cs
     Objects/       LumenValue.cs, Signal.cs, Environment.cs

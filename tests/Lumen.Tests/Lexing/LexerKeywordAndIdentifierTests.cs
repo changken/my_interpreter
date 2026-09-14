@@ -1,4 +1,5 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
@@ -17,14 +18,8 @@ public class LexerKeywordAndIdentifierTests
     [InlineData("true", TokenType.True)]
     [InlineData("false", TokenType.False)]
     [InlineData("null", TokenType.Null)]
-    public void Tokenize_Keyword_ProducesExpectedTokenType(string input, TokenType expectedType)
-    {
-        List<Token> tokens = LexerTestHelper.Tokenize(input);
-
-        Assert.Equal(expectedType, tokens[0].Type);
-        Assert.Equal(input, tokens[0].Literal);
-        Assert.Equal(TokenType.Eof, tokens[1].Type);
-    }
+    public void Tokenize_Keyword_ProducesExpectedTokenType(string input, TokenType expectedType) =>
+        LexerTestHelper.AssertToken(input, 0, new Token(expectedType, input, 1, 1));
 
     [Theory]
     [InlineData("x")]
@@ -36,14 +31,8 @@ public class LexerKeywordAndIdentifierTests
     [InlineData("nullable")]
     [InlineData("a_b_c")]
     [InlineData("_")]
-    public void Tokenize_NonKeywordIdentifier_ProducesIdent(string input)
-    {
-        List<Token> tokens = LexerTestHelper.Tokenize(input);
-
-        Assert.Equal(TokenType.Ident, tokens[0].Type);
-        Assert.Equal(input, tokens[0].Literal);
-        Assert.Equal(TokenType.Eof, tokens[1].Type);
-    }
+    public void Tokenize_NonKeywordIdentifier_ProducesIdent(string input) =>
+        LexerTestHelper.AssertToken(input, 0, new Token(TokenType.Ident, input, 1, 1));
 
     [Fact]
     public void Tokenize_MultipleIdentifiersSeparatedBySpace_ProducesSeparateTokens()

@@ -1,4 +1,4 @@
-namespace Lumen.Core.Lexing;
+namespace Lumen.Core.Tokens;
 
 public enum TokenType
 {

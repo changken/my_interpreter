@@ -1,4 +1,5 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
@@ -54,9 +55,7 @@ public class LexerCommentTests
         List<Token> tokens = LexerTestHelper.Tokenize("// first\n// second\nx");
 
         Assert.Equal(2, tokens.Count);
-        Assert.Equal(TokenType.Ident, tokens[0].Type);
-        Assert.Equal("x", tokens[0].Literal);
-        Assert.Equal(3, tokens[0].Line);
+        Assert.Equal(new Token(TokenType.Ident, "x", 3, 1), tokens[0]);
         Assert.Equal(TokenType.Eof, tokens[1].Type);
     }
 }

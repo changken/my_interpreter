@@ -1,4 +1,5 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
@@ -44,8 +45,7 @@ public class LexerPunctuationTests
         List<Token> tokens = LexerTestHelper.Tokenize(input);
 
         Assert.Equal(2, tokens.Count);
-        Assert.Equal(expectedType, tokens[0].Type);
-        Assert.Equal(expectedLiteral, tokens[0].Literal);
+        Assert.Equal(new Token(expectedType, expectedLiteral, 1, 1), tokens[0]);
         Assert.Equal(TokenType.Eof, tokens[1].Type);
     }
 

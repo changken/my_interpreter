@@ -1,4 +1,5 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
@@ -53,7 +54,10 @@ public class LexerIntegrationTests
     public void Tokenize_ArrayAndHashLiterals_ProducesExpectedSequence()
     {
         List<Token> tokens = LexerTestHelper.Tokenize(
-            "let arr := [1, 2, 3];\nlet map := {\"a\": 1, \"b\": 2};");
+            """
+            let arr := [1, 2, 3];
+            let map := {"a": 1, "b": 2};
+            """);
 
         TokenType[] expected =
         [
@@ -74,8 +78,7 @@ public class LexerIntegrationTests
     [Fact]
     public void Tokenize_ControlFlowSnippet_ProducesExpectedSequence()
     {
-        List<Token> tokens = LexerTestHelper.Tokenize(
-            "if (x > 3) { \"big\" } else { \"small\" }");
+        List<Token> tokens = LexerTestHelper.Tokenize("""if (x > 3) { "big" } else { "small" }""");
 
         TokenType[] expected =
         [

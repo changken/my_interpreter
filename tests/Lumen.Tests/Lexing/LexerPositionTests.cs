@@ -1,35 +1,22 @@
 using Lumen.Core.Lexing;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Lexing;
 
 public class LexerPositionTests
 {
     [Fact]
-    public void Tokenize_SingleCharOnFirstLine_HasLineOneColumnOne()
-    {
-        List<Token> tokens = LexerTestHelper.Tokenize("x");
-
-        Assert.Equal(1, tokens[0].Line);
-        Assert.Equal(1, tokens[0].Column);
-    }
+    public void Tokenize_SingleCharOnFirstLine_HasLineOneColumnOne() =>
+        LexerTestHelper.AssertToken("x", 0, new Token(TokenType.Ident, "x", 1, 1));
 
     [Fact]
-    public void Tokenize_TokenAfterLeadingSpaces_HasCorrectColumn()
-    {
-        List<Token> tokens = LexerTestHelper.Tokenize("  x");
-
-        Assert.Equal(1, tokens[0].Line);
-        Assert.Equal(3, tokens[0].Column);
-    }
+    public void Tokenize_TokenAfterLeadingSpaces_HasCorrectColumn() =>
+        LexerTestHelper.AssertToken("  x", 0, new Token(TokenType.Ident, "x", 1, 3));
 
     [Fact]
-    public void Tokenize_TokenAfterLeadingTab_HasColumnAdvancedByOne()
-    {
-        List<Token> tokens = LexerTestHelper.Tokenize("\tx");
-
-        Assert.Equal(1, tokens[0].Line);
-        Assert.Equal(2, tokens[0].Column);
-    }
+    public void Tokenize_TokenAfterLeadingTab_HasColumnAdvancedByOne() =>
+        // Tab 當成一般字元算一欄，不展開成 4/8 欄。
+        LexerTestHelper.AssertToken("\tx", 0, new Token(TokenType.Ident, "x", 1, 2));
 
     [Fact]
     public void Tokenize_TokensOnDifferentLines_TrackLineAndResetColumn()
