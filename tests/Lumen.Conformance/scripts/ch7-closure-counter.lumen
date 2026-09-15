@@ -1,0 +1,10 @@
+let counter := fn() {
+  let n := 0;
+  fn() { n := n + 1; return n; }
+};
+let c1 := counter();
+let c2 := counter();
+puts(c1());   // expect: 1
+puts(c1());   // expect: 2
+puts(c2());   // expect: 1
+puts(c1());   // expect: 3

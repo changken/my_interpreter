@@ -619,7 +619,7 @@ PR 未全綠不得 merge。
 - [x] **Ch4 Parser: Statements** — `let` / assignment / `if` / `while` / `for` / block / `return` / `break` / `continue`
 - [x] **Ch5 Object System** — `LumenValue` hierarchy、`Signal`、`Inspect()`、`Environment` scope chain、value equality
 - [x] **Ch6 Evaluator: Expressions** — prefix / infix / numeric promotion / short-circuit / 除零與 overflow
-- [ ] **Ch7 Evaluator: Statements & Functions** — 控制流、signal 傳播、call depth 限制、function value、closure capture
+- [x] **Ch7 Evaluator: Statements & Functions** — 控制流、signal 傳播、call depth 限制、function value、closure capture
 - [ ] **Ch8 Errors, Builtins & Composites** — BuiltinRegistry、`len` `first` `rest` `push` `puts`、array / hash / index / string、CLI
 
 ---

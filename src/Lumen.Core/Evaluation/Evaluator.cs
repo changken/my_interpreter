@@ -12,7 +12,11 @@ namespace Lumen.Core.Evaluation;
 /// </summary>
 public sealed class Evaluator
 {
+    // .NET 的 StackOverflowException 抓不到，所以呼叫深度手動計數。
+    private const int MaxCallDepth = 1000;
+
     private readonly BuiltinRegistry _builtins;
+    private int _callDepth;
 
     public Evaluator(BuiltinRegistry builtins)
     {
@@ -31,7 +35,8 @@ public sealed class Evaluator
             }
         }
 
-        return result;
+        // 頂層的 return 直接拆成值；break / continue 到不了這裡（parser 已擋）。
+        return result is ReturnSignal r ? r.Value : result;
     }
 
     // ------------------------------------------------------------------
@@ -42,8 +47,156 @@ public sealed class Evaluator
     {
         ExpressionStatement s => Eval(s.Expression, env),
         BlockStatement s => EvalBlock(s, env),
+        LetStatement s => EvalLet(s, env),
+        AssignStatement s => EvalAssign(s, env),
+        ReturnStatement s => EvalReturn(s, env),
+        BreakStatement => BreakSignal.Instance,
+        ContinueStatement => ContinueSignal.Instance,
+        WhileStatement s => EvalWhile(s, env),
+        ForStatement s => EvalFor(s, env),
         _ => throw new UnreachableException($"unsupported statement: {statement.GetType().Name}"),
     };
+
+    private LumenValue EvalLet(LetStatement node, Environment env)
+    {
+        LumenValue value = Eval(node.Value, env);
+        if (value is Signal)
+        {
+            return value;
+        }
+
+        env.Define(node.Name.Name, value);
+        return NullValue.Instance;
+    }
+
+    private LumenValue EvalAssign(AssignStatement node, Environment env)
+    {
+        LumenValue value = Eval(node.Value, env);
+        if (value is Signal)
+        {
+            return value;
+        }
+
+        return env.TryAssign(node.Name.Name, value)
+            ? NullValue.Instance
+            : Error.UndefinedVariable(node.Name.Token, node.Name.Name);
+    }
+
+    private LumenValue EvalReturn(ReturnStatement node, Environment env)
+    {
+        if (node.Value is null)
+        {
+            return new ReturnSignal(NullValue.Instance);
+        }
+
+        LumenValue value = Eval(node.Value, env);
+        return value is Signal ? value : new ReturnSignal(value);
+    }
+
+    // loop 只攔 Break / Continue；Return / Error 原樣放行。
+    private LumenValue EvalWhile(WhileStatement node, Environment env)
+    {
+        while (true)
+        {
+            LumenValue condition = Eval(node.Condition, env);
+            if (condition is Signal)
+            {
+                return condition;
+            }
+
+            if (condition is not BoolValue b)
+            {
+                return Error.ConditionNotBool(node.Token, condition);
+            }
+
+            if (!b.Value)
+            {
+                return NullValue.Instance;
+            }
+
+            LumenValue result = EvalBlock(node.Body, env);
+            if (result is BreakSignal)
+            {
+                return NullValue.Instance;
+            }
+
+            if (result is Signal and not ContinueSignal)
+            {
+                return result;
+            }
+        }
+    }
+
+    // 每輪 iteration 用新的 Environment 跑 body（closure 捕捉到的是那一輪的 binding），
+    // 結束後把 loop 變數的值寫回 loopEnv，讓 condition / update 看得到 body 裡的修改。
+    private LumenValue EvalFor(ForStatement node, Environment env)
+    {
+        Environment loopEnv = new(env);
+
+        if (node.Init is not null)
+        {
+            LumenValue init = Eval(node.Init, loopEnv);
+            if (init is Signal)
+            {
+                return init;
+            }
+        }
+
+        while (true)
+        {
+            if (node.Condition is not null)
+            {
+                LumenValue condition = Eval(node.Condition, loopEnv);
+                if (condition is Signal)
+                {
+                    return condition;
+                }
+
+                if (condition is not BoolValue b)
+                {
+                    return Error.ConditionNotBool(node.Token, condition);
+                }
+
+                if (!b.Value)
+                {
+                    return NullValue.Instance;
+                }
+            }
+
+            Environment iterEnv = new(loopEnv);
+            foreach ((string name, LumenValue value) in loopEnv.Bindings)
+            {
+                iterEnv.Define(name, value);
+            }
+
+            LumenValue result = EvalBlock(node.Body, iterEnv);
+
+            Dictionary<string, LumenValue> iterBindings = iterEnv.Bindings.ToDictionary(b => b.Key, b => b.Value);
+            foreach ((string name, _) in loopEnv.Bindings)
+            {
+                loopEnv.Define(name, iterBindings[name]);
+            }
+
+            if (result is BreakSignal)
+            {
+                return NullValue.Instance;
+            }
+
+            if (result is Signal and not ContinueSignal)
+            {
+                return result;
+            }
+
+            if (node.Update is not null)
+            {
+                LumenValue update = Eval(node.Update, loopEnv);
+                if (update is Signal)
+                {
+                    return update;
+                }
+            }
+        }
+    }
 
     // block 本身不開新 scope；最後一句的值就是 block 的值，任何 Signal 立刻中斷。
     private LumenValue EvalBlock(BlockStatement block, Environment env)
@@ -80,6 +233,7 @@ public sealed class Evaluator
         ArrayLiteral n => EvalArray(n, env),
         HashLiteral n => EvalHash(n, env),
         CallExpression n => EvalCall(n, env),
+        FunctionLiteral n => new FunctionValue(n, env),
         _ => throw new UnreachableException($"unsupported expression: {expression.GetType().Name}"),
     };
 
@@ -266,7 +420,41 @@ public sealed class Evaluator
         return callee switch
         {
             BuiltinValue builtin => builtin.Fn(arguments),
+            FunctionValue function => CallFunction(node, function, arguments),
             _ => Error.NotAFunction(node.Token, callee),
         };
+    }
+
+    private LumenValue CallFunction(CallExpression node, FunctionValue function, List<LumenValue> arguments)
+    {
+        IReadOnlyList<Identifier> parameters = function.Declaration.Parameters;
+        if (arguments.Count != parameters.Count)
+        {
+            return Error.At(node.Token, $"wrong number of arguments: expected {parameters.Count}, got {arguments.Count}");
+        }
+
+        if (_callDepth >= MaxCallDepth)
+        {
+            return Error.At(node.Token, "call stack exceeded");
+        }
+
+        _callDepth++;
+        try
+        {
+            Environment callEnv = new(function.Closure);
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                callEnv.Define(parameters[i].Name, arguments[i]);
+            }
+
+            LumenValue result = EvalBlock(function.Declaration.Body, callEnv);
+
+            // function call 只攔 Return；Error 原樣放行。
+            return result is ReturnSignal r ? r.Value : result;
+        }
+        finally
+        {
+            _callDepth--;
+        }
     }
 }

@@ -1,0 +1,5 @@
+puts("before");     // expect: before
+fn forever() { return forever(); }
+forever();
+puts("after");
+// expect-error: call stack exceeded

@@ -1,0 +1,16 @@
+fn firstOver(limit) {
+  let i := 0;
+  while (true) {
+    i := i + 1;
+    for (let j := 0; j < 3; j := j + 1) {
+      if (i * j > limit) { return [i, j]; }
+    }
+  }
+}
+puts(firstOver(5));     // expect: [3, 2]
+
+fn early() { return 1; puts("unreachable"); }
+puts(early());          // expect: 1
+
+fn implicit(x) { x * 2 }
+puts(implicit(21));     // expect: 42

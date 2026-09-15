@@ -1,0 +1,18 @@
+let outer := 0;
+let inner := 0;
+while (outer < 3) {
+  outer := outer + 1;
+  while (true) {
+    inner := inner + 1;
+    break;
+  }
+}
+puts(outer);        // expect: 3
+puts(inner);        // expect: 3
+
+let n := 0;
+for (; ; ) {
+  n := n + 1;
+  if (n == 4) { break; }
+}
+puts(n);            // expect: 4

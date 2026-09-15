@@ -1,0 +1,12 @@
+// continue 之後 update clause 仍會執行，否則會無窮迴圈
+let sum := 0;
+for (let i := 0; i < 5; i := i + 1) {
+  if (i == 2) { continue; }
+  sum := sum + i;
+}
+puts(sum);          // expect: 8
+
+// for 的 init 變數在 loop 外不可見
+let i := "outer";
+for (let i := 0; i < 1; i := i + 1) { }
+puts(i);            // expect: outer

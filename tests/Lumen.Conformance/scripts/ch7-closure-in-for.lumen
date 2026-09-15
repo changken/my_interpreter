@@ -1,0 +1,21 @@
+// 每輪 iteration 是新的 binding：closure 捕捉到的是自己那一輪的 i
+let f0 := null;
+let f1 := null;
+let f2 := null;
+for (let i := 0; i < 3; i := i + 1) {
+  if (i == 0) { f0 := fn() { i }; }
+  if (i == 1) { f1 := fn() { i }; }
+  if (i == 2) { f2 := fn() { i }; }
+}
+puts(f0());     // expect: 0
+puts(f1());     // expect: 1
+puts(f2());     // expect: 2
+
+// while 沒有 per-iteration binding，closure 看到最終值
+let k := 0;
+let g := null;
+while (k < 3) {
+  if (k == 0) { g := fn() { k }; }
+  k := k + 1;
+}
+puts(g());      // expect: 3

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lumen.Core\Lumen.Core.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Repl\Lumen.Repl.csproj" />
   </ItemGroup>
 
 </Project>

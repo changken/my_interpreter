@@ -1,0 +1,10 @@
+fn fib(n) {
+  if (n < 2) { n } else { fib(n - 1) + fib(n - 2) }
+}
+puts(fib(0));       // expect: 0
+puts(fib(1));       // expect: 1
+puts(fib(10));      // expect: 55
+puts(fib(20));      // expect: 6765
+
+fn fact(n) { if (n <= 1) { return 1; } return n * fact(n - 1); }
+puts(fact(20));     // expect: 2432902008176640000
