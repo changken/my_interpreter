@@ -614,7 +614,7 @@ PR 未全綠不得 merge。
 ## Roadmap
 
 - [x] **Ch1 Lexer** — TokenType、手刻 char-by-char scanner、two-char token、註解、Int/Float literal、REPL 印 token stream
-- [ ] **Ch2 AST** — node 型別階層、source location 欄位、`ToString()` 能還原原始碼
+- [x] **Ch2 AST** — node 型別階層、source location 欄位、`ToString()` 能還原原始碼
 - [ ] **Ch3 Parser: Expressions** — Pratt 核心、precedence table、`**` right-assoc、`LogicalExpr`、nesting depth 限制、error recovery
 - [ ] **Ch4 Parser: Statements** — `let` / assignment / `if` / `while` / `for` / block / `return` / `break` / `continue`
 - [ ] **Ch5 Object System** — `LumenValue` hierarchy、`Signal`、`Inspect()`、`Environment` scope chain、value equality
