@@ -1,5 +1,6 @@
 using Lumen.Core.Lexing;
-using Lumen.Core.Tokens;
+using Lumen.Core.Parsing;
+using AstProgram = Lumen.Core.Ast.Program;
 
 while (true)
 {
@@ -10,8 +11,18 @@ while (true)
         break;
     }
 
-    foreach (Token token in new Lexer(line).Tokenize())
+    Parser parser = new(new Lexer(line).Tokenize());
+    AstProgram program = parser.ParseProgram();
+
+    if (parser.Errors.Count > 0)
     {
-        Console.WriteLine($"{token.Type,-12} {token.Literal,-15} line {token.Line}, col {token.Column}");
+        foreach (ParseError error in parser.Errors)
+        {
+            Console.WriteLine(error);
+        }
+
+        continue;
     }
+
+    Console.WriteLine(program);
 }
