@@ -101,6 +101,79 @@ public class ParserErrorTests
         Assert.Single(errors);
     }
 
+    [Theory]
+    [InlineData("let x := 5", "expected ';' but found end of input")]
+    [InlineData("let := 5;", "expected identifier but found ':='")]
+    [InlineData("let x 5;", "expected ':=' but found '5'")]
+    [InlineData("let x := ;", "unexpected token ';'")]
+    [InlineData("x := 5", "expected ';' but found end of input")]
+    [InlineData("return 5", "expected ';' but found end of input")]
+    [InlineData("while (x) { break }", "expected ';' but found '}'")]
+    [InlineData("break;", "'break' outside of loop")]
+    [InlineData("continue;", "'continue' outside of loop")]
+    [InlineData("while (true) { fn() { break; } }", "'break' outside of loop")]
+    [InlineData("if (x) { continue; }", "'continue' outside of loop")]
+    [InlineData("arr[0] := 1;", "invalid assignment target")]
+    [InlineData("a + b := 1;", "invalid assignment target")]
+    [InlineData("while (x) x := 1;", "expected '{' but found 'x'")]
+    [InlineData("while x { }", "expected '(' but found 'x'")]
+    [InlineData("for (let i := 0 i < 3; ) { }", "expected ';' but found 'i'")]
+    [InlineData("for (let i := 0; i < 3) { }", "expected ';' but found ')'")]
+    [InlineData("for (; ; let i := 0) { }", "unexpected token 'let'")]
+    [InlineData("fn add(a, b) 1", "expected '{' but found '1'")]
+    public void ParseProgram_MalformedStatement_RecordsDescriptiveError(string input, string expectedFragment)
+    {
+        IReadOnlyList<ParseError> errors = ParserTestHelper.ParseErrors(input);
+
+        Assert.Contains(expectedFragment, errors[0].Message);
+    }
+
+    [Fact]
+    public void ParseProgram_StatementErrorOnThirdLine_ReportsLine()
+    {
+        IReadOnlyList<ParseError> errors = ParserTestHelper.ParseErrors("let x := 1;\nlet y := 2;\nlet z := ;");
+
+        Assert.StartsWith("[line 3:10] ", errors[0].ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_MultipleBrokenStatements_ReportsEachAndRecoversAtNextLet()
+    {
+        (Program program, IReadOnlyList<ParseError> errors) = ParserTestHelper.Parse("let := ;;; @@@ let x := 1;");
+
+        Assert.True(errors.Count >= 3, $"expected several errors, got:\n{string.Join("\n", errors)}");
+        IStatement recovered = Assert.Single(program.Statements);
+        Assert.Equal("let x := 1;", recovered.ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_MissingTerminatorBeforeNextStatement_DoesNotSwallowNextStatement()
+    {
+        (Program program, IReadOnlyList<ParseError> errors) = ParserTestHelper.Parse("let x := 5 let y := 6;");
+
+        Assert.Single(errors);
+        Assert.Equal("let y := 6;", Assert.Single(program.Statements).ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_ErrorInsideBlock_RecoversWithinBlockAndClosesIt()
+    {
+        (Program program, IReadOnlyList<ParseError> errors) = ParserTestHelper.Parse("fn() { let x := ; 1 }");
+
+        Assert.Single(errors);
+        Assert.Equal("fn() { 1; };", Assert.Single(program.Statements).ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_DeeplyNestedBlocks_RecordsNestingErrorWithoutCrashing()
+    {
+        string input = string.Concat(Enumerable.Repeat("while (true) { ", 250)) + string.Concat(Enumerable.Repeat("}", 250));
+
+        IReadOnlyList<ParseError> errors = ParserTestHelper.ParseErrors(input);
+
+        Assert.Contains(errors, e => e.Message.Contains("nesting too deep"));
+    }
+
     [Fact]
     public void ParseProgram_ErrorInFirstStatement_StillParsesLaterStatements()
     {

@@ -25,6 +25,7 @@ public sealed class Parser
 
     private int _position;
     private int _nestingDepth;
+    private int _loopDepth;
 
     public Parser(IEnumerable<Token> tokens)
     {
@@ -126,9 +127,205 @@ public sealed class Parser
         return statements;
     }
 
-    private IStatement? ParseStatement() => ParseExpressionStatement();
+    // 分號規則：let / 賦值 / return / break / continue 必須以 `;` 結尾；expression statement 可省略；
+    // 具名函式宣告與 while / for 以 `}` 結尾，不需要分號。
+    private IStatement? ParseStatement()
+    {
+        switch (Current.Type)
+        {
+            case TokenType.Let:
+                return Terminated(ParseLetStatement());
+            case TokenType.Fn when PeekNext.Type == TokenType.Ident:
+                return ParseFunctionDeclaration();
+            case TokenType.Return:
+                return ParseReturnStatement();
+            case TokenType.Break:
+                return ParseLoopControl(static t => new BreakStatement(t));
+            case TokenType.Continue:
+                return ParseLoopControl(static t => new ContinueStatement(t));
+            case TokenType.While:
+                return ParseWhileStatement();
+            case TokenType.For:
+                return ParseForStatement();
+            case TokenType.Ident when PeekNext.Type == TokenType.Assign:
+                return Terminated(ParseAssignStatement());
+            default:
+                return ParseExpressionStatement();
+        }
+    }
+
+    private IStatement? Terminated(IStatement? statement) =>
+        statement is not null && Expect(TokenType.Semicolon) ? statement : null;
+
+    // for 的 init / update 子句：let（僅 init）/ 賦值 / expression，不消費結尾分號。
+    private IStatement? ParseSimpleStatement(bool allowLet)
+    {
+        return Current.Type switch
+        {
+            TokenType.Let when allowLet => ParseLetStatement(),
+            TokenType.Ident when PeekNext.Type == TokenType.Assign => ParseAssignStatement(),
+            _ => ParseBareExpressionStatement(),
+        };
+    }
+
+    private LetStatement? ParseLetStatement()
+    {
+        Token token = Advance();
+        Identifier? name = ExpectIdentifier();
+        if (name is null || !Expect(TokenType.Assign))
+        {
+            return null;
+        }
+
+        IExpression? value = ParseExpression(Precedence.Lowest);
+        return value is null ? null : new LetStatement(token, name, value);
+    }
+
+    private AssignStatement? ParseAssignStatement()
+    {
+        Token token = Current;
+        Identifier? name = ExpectIdentifier();
+        if (name is null || !Expect(TokenType.Assign))
+        {
+            return null;
+        }
+
+        IExpression? value = ParseExpression(Precedence.Lowest);
+        return value is null ? null : new AssignStatement(token, name, value);
+    }
+
+    // `fn add(a, b) { ... }` 是 `let add := fn(a, b) { ... };` 的語法糖；Name 記在 literal 上供之後 call stack 使用。
+    private LetStatement? ParseFunctionDeclaration()
+    {
+        Token fnToken = Advance();
+        Token nameToken = Advance();
+        Identifier name = new(nameToken, nameToken.Literal);
+
+        FunctionLiteral? function = ParseFunctionRest(fnToken, nameToken.Literal);
+        return function is null ? null : new LetStatement(fnToken, name, function);
+    }
+
+    private ReturnStatement? ParseReturnStatement()
+    {
+        Token token = Advance();
+        if (Match(TokenType.Semicolon))
+        {
+            return new ReturnStatement(token, null);
+        }
+
+        IExpression? value = ParseExpression(Precedence.Lowest);
+        if (value is null)
+        {
+            return null;
+        }
+
+        return Expect(TokenType.Semicolon) ? new ReturnStatement(token, value) : null;
+    }
+
+    private IStatement? ParseLoopControl(Func<Token, IStatement> create)
+    {
+        Token token = Advance();
+        if (_loopDepth == 0)
+        {
+            AddError($"'{token.Literal}' outside of loop", token);
+            return null;
+        }
+
+        return Expect(TokenType.Semicolon) ? create(token) : null;
+    }
+
+    private WhileStatement? ParseWhileStatement()
+    {
+        Token token = Advance();
+        if (!Expect(TokenType.LParen))
+        {
+            return null;
+        }
+
+        IExpression? condition = ParseExpression(Precedence.Lowest);
+        if (condition is null || !Expect(TokenType.RParen))
+        {
+            return null;
+        }
+
+        BlockStatement? body = ParseLoopBody();
+        return body is null ? null : new WhileStatement(token, condition, body);
+    }
+
+    private ForStatement? ParseForStatement()
+    {
+        Token token = Advance();
+        if (!Expect(TokenType.LParen))
+        {
+            return null;
+        }
+
+        IStatement? init = null;
+        if (!Match(TokenType.Semicolon))
+        {
+            init = ParseSimpleStatement(allowLet: true);
+            if (init is null || !Expect(TokenType.Semicolon))
+            {
+                return null;
+            }
+        }
+
+        IExpression? condition = null;
+        if (!Match(TokenType.Semicolon))
+        {
+            condition = ParseExpression(Precedence.Lowest);
+            if (condition is null || !Expect(TokenType.Semicolon))
+            {
+                return null;
+            }
+        }
+
+        IStatement? update = null;
+        if (Current.Type != TokenType.RParen)
+        {
+            update = ParseSimpleStatement(allowLet: false);
+            if (update is null)
+            {
+                return null;
+            }
+        }
+
+        if (!Expect(TokenType.RParen))
+        {
+            return null;
+        }
+
+        BlockStatement? body = ParseLoopBody();
+        return body is null ? null : new ForStatement(token, init, condition, update, body);
+    }
+
+    private BlockStatement? ParseLoopBody()
+    {
+        _loopDepth++;
+        try
+        {
+            return ParseBlockStatement();
+        }
+        finally
+        {
+            _loopDepth--;
+        }
+    }
 
     private ExpressionStatement? ParseExpressionStatement()
+    {
+        ExpressionStatement? statement = ParseBareExpressionStatement();
+        if (statement is null)
+        {
+            return null;
+        }
+
+        // expression statement 的分號可省略。
+        Match(TokenType.Semicolon);
+        return statement;
+    }
+
+    private ExpressionStatement? ParseBareExpressionStatement()
     {
         Token start = Current;
         IExpression? expression = ParseExpression(Precedence.Lowest);
@@ -137,9 +334,26 @@ public sealed class Parser
             return null;
         }
 
-        // expression statement 的分號可省略。
-        Match(TokenType.Semicolon);
+        // 只有 `ident := expr` 會走 AssignStatement；其他任何運算式後面接 `:=` 都不是合法的賦值目標。
+        if (Current.Type == TokenType.Assign)
+        {
+            AddError("invalid assignment target", Current);
+            return null;
+        }
+
         return new ExpressionStatement(start, expression);
+    }
+
+    private Identifier? ExpectIdentifier()
+    {
+        if (Current.Type != TokenType.Ident)
+        {
+            AddError($"expected identifier but found {Display(Current)}", Current);
+            return null;
+        }
+
+        Token token = Advance();
+        return new Identifier(token, token.Literal);
     }
 
     private BlockStatement? ParseBlockStatement()
@@ -353,12 +567,11 @@ public sealed class Parser
         return new IfExpression(token, condition, consequence, alternative);
     }
 
-    private IExpression? ParseAnonymousFunction() => ParseFunctionLiteral(name: null);
+    private IExpression? ParseAnonymousFunction() => ParseFunctionRest(Advance(), name: null);
 
-    // name 由呼叫端決定：expression 位置一律匿名；statement 位置的 `fn add(...)` 會傳入名稱。
-    private FunctionLiteral? ParseFunctionLiteral(string? name)
+    // `fn` 已被呼叫端吃掉；expression 位置一律匿名，statement 位置的 `fn add(...)` 會傳入名稱。
+    private FunctionLiteral? ParseFunctionRest(Token fnToken, string? name)
     {
-        Token token = Advance();
         if (!Expect(TokenType.LParen))
         {
             return null;
@@ -370,8 +583,18 @@ public sealed class Parser
             return null;
         }
 
-        BlockStatement? body = ParseBlockStatement();
-        return body is null ? null : new FunctionLiteral(token, parameters, body, name);
+        // 函式本體是新的 loop 邊界：外層 loop 裡的 fn 內不能 break / continue。
+        int outerLoopDepth = _loopDepth;
+        _loopDepth = 0;
+        try
+        {
+            BlockStatement? body = ParseBlockStatement();
+            return body is null ? null : new FunctionLiteral(fnToken, parameters, body, name);
+        }
+        finally
+        {
+            _loopDepth = outerLoopDepth;
+        }
     }
 
     private List<Identifier>? ParseParameterList()
@@ -384,14 +607,13 @@ public sealed class Parser
 
         while (true)
         {
-            if (Current.Type != TokenType.Ident)
+            Identifier? parameter = ExpectIdentifier();
+            if (parameter is null)
             {
-                AddError($"expected identifier but found {Display(Current)}", Current);
                 return null;
             }
 
-            Token token = Advance();
-            parameters.Add(new Identifier(token, token.Literal));
+            parameters.Add(parameter);
 
             if (!Match(TokenType.Comma))
             {
@@ -522,6 +744,8 @@ public sealed class Parser
     // ------------------------------------------------------------------
 
     private Token Current => _tokens[_position];
+
+    private Token PeekNext => _tokens[Math.Min(_position + 1, _tokens.Count - 1)];
 
     // 永遠不會越過最後的 Eof：到了 Eof 之後再 Advance 仍停在原地。
     private Token Advance()
