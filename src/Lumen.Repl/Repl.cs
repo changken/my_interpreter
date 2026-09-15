@@ -18,15 +18,19 @@ public sealed class Repl
 
     private readonly TextReader _input;
     private readonly TextWriter _output;
-    private readonly Evaluator _evaluator;
+    private readonly BuiltinRegistry _builtins;
     private LumenEnv _env = new();
+    private CancellationTokenSource? _current;
 
     public Repl(TextReader input, TextWriter output)
     {
         _input = input;
         _output = output;
-        _evaluator = new Evaluator(Builtins.CreateDefault(output));
+        _builtins = Builtins.CreateDefault(output);
     }
+
+    /// <summary>中斷目前正在跑的求值（例如 Ctrl+C）；沒在求值時沒有作用。</summary>
+    public void Interrupt() => _current?.Cancel();
 
     public void Run()
     {
@@ -93,7 +97,24 @@ public sealed class Repl
             return;
         }
 
-        LumenValue result = _evaluator.Eval(program, _env);
+        // 每次求值一個新的 token，讓 Ctrl+C 只打斷這一次；CTS 不 dispose，避免與 Interrupt() 的 race。
+        CancellationTokenSource cts = new();
+        _current = cts;
+        LumenValue result;
+        try
+        {
+            result = new Evaluator(_builtins, cts.Token).Eval(program, _env);
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("interrupted");
+            return;
+        }
+        finally
+        {
+            _current = null;
+        }
+
         if (result is ErrorSignal)
         {
             _output.WriteLine(result.Inspect());

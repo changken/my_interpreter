@@ -1,0 +1,6 @@
+fn inner(x) { x + "a" }
+fn middle(x) { inner(x) }
+fn outer() { middle(1) }
+puts("calling");    // expect: calling
+outer();
+// expect-error: at inner

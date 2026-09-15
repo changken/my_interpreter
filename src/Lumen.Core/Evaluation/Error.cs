@@ -9,6 +9,12 @@ internal static class Error
     public static ErrorSignal At(Token token, string message) =>
         new(new StringValue(message), token.Line, token.Column);
 
+    // builtin 不知道自己在哪被呼叫；位置先留 0，Evaluator 在 call site 補上。
+    public static ErrorSignal FromBuiltin(string message) => new(new StringValue(message), 0, 0);
+
+    public static ErrorSignal WrongArity(int expected, int actual) =>
+        FromBuiltin($"wrong number of arguments: expected {expected}, got {actual}");
+
     public static ErrorSignal TypeMismatch(Token op, LumenValue left, LumenValue right) =>
         At(op, $"type mismatch: {left.TypeName} {op.Literal} {right.TypeName}");
 

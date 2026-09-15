@@ -1,0 +1,5 @@
+puts("before");     // expect: before
+let arr := [1, 2];
+puts(arr[5]);
+puts("after");
+// expect-error: index out of range: 5

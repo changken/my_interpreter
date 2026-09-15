@@ -124,7 +124,8 @@ public class EvaluatorFunctionTests
     {
         ErrorSignal error = EvalTestHelper.EvalError("let f := fn() {\n  1 + \"a\"\n};\nf()");
 
-        Assert.Equal("[line 2:5] type mismatch: Int + String", error.Inspect());
+        Assert.Equal((2, 5), (error.Line, error.Column));
+        Assert.StartsWith("[line 2:5] type mismatch: Int + String", error.Inspect());
     }
 
     [Fact]

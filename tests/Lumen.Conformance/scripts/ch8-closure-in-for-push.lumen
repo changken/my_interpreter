@@ -1,0 +1,9 @@
+// spec 的 closure capture 必要 test：每輪 iteration 是獨立 binding
+let fns := [];
+for (let i := 0; i < 3; i := i + 1) {
+  fns := push(fns, fn() { return i; });
+}
+puts(fns[0]());     // expect: 0
+puts(fns[1]());     // expect: 1
+puts(fns[2]());     // expect: 2
+puts(len(fns));     // expect: 3

@@ -33,8 +33,14 @@ internal sealed record ContinueSignal : Signal
 
 internal sealed record ErrorSignal(LumenValue Payload, int Line, int Column) : Signal
 {
+    /// <summary>錯誤冒泡經過的 function 名稱，最內層在前；由 Evaluator 在 call 邊界附加。</summary>
+    public IReadOnlyList<string> CallStack { get; init; } = [];
+
     public override string TypeName => "Error";
 
-    public override string Inspect() =>
-        string.Create(CultureInfo.InvariantCulture, $"[line {Line}:{Column}] {Payload.Inspect()}");
+    public override string Inspect()
+    {
+        string header = string.Create(CultureInfo.InvariantCulture, $"[line {Line}:{Column}] {Payload.Inspect()}");
+        return header + string.Concat(CallStack.Select(frame => $"\n  at {frame}"));
+    }
 }

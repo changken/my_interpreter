@@ -1,0 +1,15 @@
+let arr := [10, 20, [30, 40]];
+puts(arr[0]);                // expect: 10
+puts(arr[2][1]);             // expect: 40
+puts(arr[len(arr) - 1]);     // expect: [30, 40]
+
+let map := {"a": 1, "b": [2, 3], 1: "one", true: "yes"};
+puts(map["a"]);              // expect: 1
+puts(map["b"][1]);           // expect: 3
+puts(map[1.0]);              // expect: one
+puts(map[true]);             // expect: yes
+puts(map["missing"]);        // expect: null
+puts(map);                   // expect: {"a": 1, "b": [2, 3], 1: "one", true: "yes"}
+
+let key := "dyn";
+puts({key: 42}["dyn"]);      // expect: 42

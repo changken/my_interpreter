@@ -97,4 +97,20 @@ public class ReplTests
     {
         Assert.Empty(RunLines(string.Empty));
     }
+
+    [Fact]
+    public void Interrupt_DuringEvaluation_ReturnsToPromptWithoutExiting()
+    {
+        StringWriter output = new();
+        Lumen.Repl.Repl repl = new(new StringReader("while (true) { }\n1 + 1\n"), output);
+        Thread thread = new(repl.Run);
+
+        thread.Start();
+        Thread.Sleep(150);
+        repl.Interrupt();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(5)), "REPL did not return to the prompt after Interrupt()");
+
+        string[] lines = output.ToString().Replace("lumen> ", string.Empty).Split(System.Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(["interrupted", "2"], lines);
+    }
 }

@@ -1,0 +1,13 @@
+puts(len("héllo"));          // expect: 5
+puts(len(""));               // expect: 0
+puts(len([1, 2, 3]));        // expect: 3
+puts(first([7, 8, 9]));      // expect: 7
+puts(first([]));             // expect: null
+puts(rest([7, 8, 9]));       // expect: [8, 9]
+puts(rest([7]));             // expect: []
+puts(rest([]));              // expect: null
+
+let a := [1];
+let b := push(a, 2);
+puts(a);                     // expect: [1]
+puts(b);                     // expect: [1, 2]

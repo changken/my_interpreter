@@ -14,13 +14,16 @@ public sealed class Evaluator
 {
     // .NET 的 StackOverflowException 抓不到，所以呼叫深度手動計數。
     private const int MaxCallDepth = 1000;
+    private const int MaxCallStackFrames = 10;
 
     private readonly BuiltinRegistry _builtins;
+    private readonly CancellationToken _cancellationToken;
     private int _callDepth;
 
-    public Evaluator(BuiltinRegistry builtins)
+    public Evaluator(BuiltinRegistry builtins, CancellationToken cancellationToken = default)
     {
         _builtins = builtins;
+        _cancellationToken = cancellationToken;
     }
 
     public LumenValue Eval(Program program, Environment env)
@@ -98,6 +101,8 @@ public sealed class Evaluator
     {
         while (true)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
+
             LumenValue condition = Eval(node.Condition, env);
             if (condition is Signal)
             {
@@ -144,6 +149,8 @@ public sealed class Evaluator
 
         while (true)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
+
             if (node.Condition is not null)
             {
                 LumenValue condition = Eval(node.Condition, loopEnv);
@@ -234,8 +241,43 @@ public sealed class Evaluator
         HashLiteral n => EvalHash(n, env),
         CallExpression n => EvalCall(n, env),
         FunctionLiteral n => new FunctionValue(n, env),
+        IndexExpression n => EvalIndex(n, env),
         _ => throw new UnreachableException($"unsupported expression: {expression.GetType().Name}"),
     };
+
+    private LumenValue EvalIndex(IndexExpression node, Environment env)
+    {
+        LumenValue left = Eval(node.Left, env);
+        if (left is Signal)
+        {
+            return left;
+        }
+
+        LumenValue index = Eval(node.Index, env);
+        if (index is Signal)
+        {
+            return index;
+        }
+
+        switch (left, index)
+        {
+            case (ArrayValue array, IntValue i):
+                return i.Value >= 0 && i.Value < array.Elements.Count
+                    ? array.Elements[(int)i.Value]
+                    : Error.At(node.Token, $"index out of range: {i.Inspect()}");
+            case (ArrayValue, _):
+                return Error.At(node.Token, $"array index must be Int, got {index.TypeName}");
+            case (HashValue hash, _):
+                if (!HashValue.IsValidKey(index))
+                {
+                    return Error.UnusableHashKey(node.Token, index);
+                }
+
+                return hash.TryGet(index, out LumenValue value) ? value : NullValue.Instance;
+            default:
+                return Error.At(node.Token, $"index operator not supported: {left.TypeName}");
+        }
+    }
 
     private LumenValue EvalIdentifier(Identifier node, Environment env)
     {
@@ -419,11 +461,15 @@ public sealed class Evaluator
 
         return callee switch
         {
-            BuiltinValue builtin => builtin.Fn(arguments),
+            BuiltinValue builtin => LocateBuiltinError(node, builtin.Fn(arguments)),
             FunctionValue function => CallFunction(node, function, arguments),
             _ => Error.NotAFunction(node.Token, callee),
         };
     }
+
+    // builtin 產生的錯誤沒有位置（Line 0），在 call site 補上。
+    private static LumenValue LocateBuiltinError(CallExpression node, LumenValue result) =>
+        result is ErrorSignal { Line: 0 } e ? e with { Line = node.Token.Line, Column = node.Token.Column } : result; // interception point
 
     private LumenValue CallFunction(CallExpression node, FunctionValue function, List<LumenValue> arguments)
     {
@@ -438,6 +484,8 @@ public sealed class Evaluator
             return Error.At(node.Token, "call stack exceeded");
         }
 
+        _cancellationToken.ThrowIfCancellationRequested();
+
         _callDepth++;
         try
         {
@@ -449,12 +497,22 @@ public sealed class Evaluator
 
             LumenValue result = EvalBlock(function.Declaration.Body, callEnv);
 
-            // function call 只攔 Return；Error 原樣放行。
-            return result is ReturnSignal r ? r.Value : result;
+            // function call 只攔 Return；Error 原樣放行，只在經過時附加 call frame 供訊息顯示。
+            return result switch
+            {
+                ReturnSignal r => r.Value,
+                ErrorSignal e => WithFrame(e, function.Declaration.Name ?? "<anonymous>"), // interception point
+                _ => result,
+            };
         }
         finally
         {
             _callDepth--;
         }
     }
+
+    private static ErrorSignal WithFrame(ErrorSignal error, string frame) =>
+        error.CallStack.Count >= MaxCallStackFrames
+            ? error
+            : error with { CallStack = [.. error.CallStack, frame] };
 }
