@@ -1,0 +1,8 @@
+puts(true && false);        // expect: false
+puts(false || true);        // expect: true
+puts(!true);                // expect: false
+puts(!!true);               // expect: true
+puts(false && boom());      // expect: false
+puts(true || boom());       // expect: true
+puts(false && (1 / 0 == 1)); // expect: false
+puts(true && false || true); // expect: true

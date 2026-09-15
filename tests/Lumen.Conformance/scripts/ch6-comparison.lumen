@@ -1,0 +1,12 @@
+puts(1 == 1.0);             // expect: true
+puts(1 < 2);                // expect: true
+puts(2 <= 1);               // expect: false
+puts(1.5 > 1);              // expect: true
+puts("a" == "a");           // expect: true
+puts("a" != "b");           // expect: true
+puts(1 == "1");             // expect: false
+puts(null == null);         // expect: true
+puts([1, 2] == [1, 2]);     // expect: true
+puts([1, 2] == [2, 1]);     // expect: false
+puts({"a": 1} == {"a": 1}); // expect: true
+puts(1 < 2 == true);        // expect: true

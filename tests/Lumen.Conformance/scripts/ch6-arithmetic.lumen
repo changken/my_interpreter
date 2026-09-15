@@ -1,0 +1,12 @@
+puts(1 + 2 * 3);        // expect: 7
+puts((1 + 2) * 3);      // expect: 9
+puts(2 ** 3 ** 2);      // expect: 512
+puts(2 ** 10);          // expect: 1024
+puts(2 ** -1);          // expect: 0.5
+puts(5 / 2);            // expect: 2
+puts(5.0 / 2);          // expect: 2.5
+puts(-7 / 2);           // expect: -3
+puts(7 % 3);            // expect: 1
+puts(1.5 + 1);          // expect: 2.5
+puts(1.0);              // expect: 1.0
+puts(-(3 - 5));         // expect: 2

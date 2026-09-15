@@ -1,0 +1,7 @@
+# Ch6 Evaluator: Expressions — Decisions
+
+- 數值只有兩條路徑（`Numeric.Infix`）：`(IntValue, IntValue)` 走 `checked` long，其餘任一邊是 Float 就 promote 成 double；沒有任何 (型別, 型別, 運算子) 的個別 case。Int `**` 用平方求冪逐步 `checked` 保持 Int，負指數退到 Float；`x % -1` 先擋成 0，避免 `long.MinValue % -1` 在 .NET 丟 OverflowException。Float 任何非有限結果（NaN / Infinity）一律 `not a finite number`，除零則先擋成 `division by zero`。
+- `==` / `!=`：兩邊都是數值走 `Numeric.Infix`（Int 對 Int 精確比較，混合才轉 double，`1 == 1.0` 為 true）；否則用 `LumenValue.Equals`（Array / Hash structural、Function reference），型別不同就是 false 不報錯。`< > <= >=` 只接受數值，其他組合 `type mismatch`。`+` 只多接受 String + String。
+- `!` 只接受 Bool、`-` 只接受 Int / Float，其他回 `unknown operator: !Int`；`if` 條件與 `&&` / `||` 兩側都必須是 Bool（沒有 truthiness）。`&&` / `||` 走 `LogicalExpression` 專屬路徑做 short-circuit，右邊在左邊已決定結果時完全不求值。
+- Builtin 不塞進 `Environment`：`Evaluator` 建構子收 `BuiltinRegistry`，識別字解析先查 env、再查 registry，所以 `let puts := 1` 可以 shadow、`.env` 之後只會列使用者 binding、Evaluator 對任何 builtin 名稱零知識。`Builtins.CreateDefault(TextWriter)` 只註冊 `puts`（提前到 Ch6 是為了 conformance 有輸出可比對），其餘 Ch8。
+- Conformance 專案（`tests/Lumen.Conformance`）從本章開始：每個 `scripts/*.lumen` 一個 `[Theory]` case，逐行比對 `// expect:` 與 `puts` 輸出；檔尾可用 `// expect-error: 片段` 斷言腳本以 ErrorSignal 結束。`Signal` 是 internal，Conformance 也加進 `InternalsVisibleTo`。「Evaluator 原始碼不得出現 `is ErrorSignal`」由 `EvaluatorArchitectureTests` 直接掃 `src/Lumen.Core/Evaluation/*.cs` 強制（允許例外只有標了 `// interception point` 的行）。

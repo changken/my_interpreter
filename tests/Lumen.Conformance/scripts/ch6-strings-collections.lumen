@@ -1,0 +1,8 @@
+puts("a" + "b" + "c");                  // expect: abc
+puts("quote \"inside\"");               // expect: quote "inside"
+puts([1, "x", [2, 3], null, 1.5]);      // expect: [1, "x", [2, 3], null, 1.5]
+puts({"a": 1, 2: true, 1.0: "one"});    // expect: {"a": 1, 2: true, 1: "one"}
+puts([]);                               // expect: []
+puts({});                               // expect: {}
+puts(1, "two");                         // expect: 1
+// expect: two

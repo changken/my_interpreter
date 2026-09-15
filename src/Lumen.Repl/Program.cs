@@ -1,6 +1,12 @@
+using Lumen.Core.Evaluation;
 using Lumen.Core.Lexing;
+using Lumen.Core.Objects;
 using Lumen.Core.Parsing;
 using AstProgram = Lumen.Core.Ast.Program;
+using LumenEnv = Lumen.Core.Objects.Environment;
+
+Evaluator evaluator = new(Builtins.CreateDefault(Console.Out));
+LumenEnv env = new();
 
 while (true)
 {
@@ -24,5 +30,9 @@ while (true)
         continue;
     }
 
-    Console.WriteLine(program);
+    LumenValue result = evaluator.Eval(program, env);
+    if (result is not NullValue)
+    {
+        Console.WriteLine(result.Inspect());
+    }
 }

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Lumen.Tests" />
+    <InternalsVisibleTo Include="Lumen.Conformance" />
     <InternalsVisibleTo Include="Lumen.Repl" />
   </ItemGroup>
 

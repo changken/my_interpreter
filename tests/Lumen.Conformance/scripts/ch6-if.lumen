@@ -1,0 +1,6 @@
+puts(if (1 < 2) { "yes" } else { "no" });   // expect: yes
+puts(if (1 > 2) { "yes" } else { "no" });   // expect: no
+puts(if (false) { 1 });                     // expect: null
+puts(if (true) { 1; 2; 3 });                // expect: 3
+puts(if (true) { if (false) { 1 } else { 2 } } else { 3 }); // expect: 2
+puts(1 + if (true) { 10 } else { 20 });     // expect: 11
