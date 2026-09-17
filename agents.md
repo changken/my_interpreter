@@ -626,7 +626,7 @@ PR 未全綠不得 merge。
 v1（規劃與各章設計見 `docs/ch9-ch14-plan.md`；仍然一次一章）：
 
 - [x] **Ch9 Compound Assignment** — `+=` `-=` `*=` `/=`，parser desugar 成 `x := x op e`，目標限 identifier
-- [ ] **Ch10 Char** — `'a'` literal、`CharValue`（可比較大小、不參與數值運算）、`"abc"[0]` 回 Char
+- [x] **Ch10 Char** — `'a'` literal、`CharValue`（可比較大小、不參與數值運算）、`"abc"[0]` 回 Char
 - [ ] **Ch11 String / Array Builtins** — 純資料進出：`upper` `lower` `trim` `split` `join` `contains` `reverse` `last`（stretch：`indexOf` `slice` `replace` `concat` `sort`）
 - [ ] **Ch12 Class I** — `class Name { fields }`、`new`、`obj.field` 唯讀；instance 建構後不可變
 - [ ] **Ch13 Class II** — class body 內的 `fn` method、`this`、`obj.method()`（bound `FunctionValue`，走既有 `CallFunction`）

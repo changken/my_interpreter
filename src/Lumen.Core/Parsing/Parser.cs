@@ -38,6 +38,7 @@ public sealed class Parser
             [TokenType.Int] = ParseIntegerLiteral,
             [TokenType.Float] = ParseFloatLiteral,
             [TokenType.String] = ParseStringLiteral,
+            [TokenType.Char] = ParseCharLiteral,
             [TokenType.True] = ParseBooleanLiteral,
             [TokenType.False] = ParseBooleanLiteral,
             [TokenType.Null] = ParseNullLiteral,
@@ -538,6 +539,12 @@ public sealed class Parser
     {
         Token token = Advance();
         return new StringLiteral(token, token.Literal);
+    }
+
+    private IExpression ParseCharLiteral()
+    {
+        Token token = Advance();
+        return new CharLiteral(token, token.Literal[0]);
     }
 
     private IExpression ParseBooleanLiteral()

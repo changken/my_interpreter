@@ -21,6 +21,8 @@ public class ValueEqualityTests
         Assert.Equal(new FloatValue(1.5), new FloatValue(1.5));
         Assert.Equal(BoolValue.True, new BoolValue(true));
         Assert.Equal(NullValue.Instance, NullValue.Instance);
+        Assert.Equal(new CharValue('a'), new CharValue('a'));
+        Assert.NotEqual(new CharValue('a'), new CharValue('b'));
     }
 
     [Fact]

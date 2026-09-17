@@ -49,6 +49,22 @@ public class InspectTests
         Assert.Equal("hello", new StringValue("hello").Inspect());
     }
 
+    [Theory]
+    [InlineData('a', "a")]
+    [InlineData('\n', "\n")]
+    public void Inspect_CharValue_PrintsRawCharWithoutQuotes(char value, string expected)
+    {
+        Assert.Equal(expected, new CharValue(value).Inspect());
+    }
+
+    [Fact]
+    public void Inspect_ArrayOfChars_QuotesAndEscapesElements()
+    {
+        ArrayValue array = new([new CharValue('a'), new CharValue('\n'), new CharValue('\'')]);
+
+        Assert.Equal("['a', '\\n', '\\'']", array.Inspect());
+    }
+
     [Fact]
     public void Inspect_ArrayValue_QuotesNestedStrings()
     {
@@ -110,6 +126,7 @@ public class InspectTests
     [InlineData(typeof(FloatValue), "Float")]
     [InlineData(typeof(BoolValue), "Bool")]
     [InlineData(typeof(StringValue), "String")]
+    [InlineData(typeof(CharValue), "Char")]
     [InlineData(typeof(NullValue), "Null")]
     [InlineData(typeof(ArrayValue), "Array")]
     [InlineData(typeof(HashValue), "Hash")]
@@ -123,6 +140,7 @@ public class InspectTests
             nameof(FloatValue) => new FloatValue(1),
             nameof(BoolValue) => BoolValue.True,
             nameof(StringValue) => new StringValue(""),
+            nameof(CharValue) => new CharValue('a'),
             nameof(NullValue) => NullValue.Instance,
             nameof(ArrayValue) => new ArrayValue([]),
             nameof(HashValue) => new HashValue(),

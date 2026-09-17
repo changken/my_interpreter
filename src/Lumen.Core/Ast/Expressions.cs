@@ -46,6 +46,27 @@ public sealed record StringLiteral(Token Token, string Value) : Node(Token), IEx
     }
 }
 
+public sealed record CharLiteral(Token Token, char Value) : Node(Token), IExpression
+{
+    public override string ToString()
+    {
+        StringBuilder sb = new(3);
+        sb.Append('\'');
+        switch (Value)
+        {
+            case '\\': sb.Append("\\\\"); break;
+            case '\'': sb.Append("\\'"); break;
+            case '\n': sb.Append("\\n"); break;
+            case '\t': sb.Append("\\t"); break;
+            case '\0': sb.Append("\\0"); break;
+            default: sb.Append(Value); break;
+        }
+
+        sb.Append('\'');
+        return sb.ToString();
+    }
+}
+
 public sealed record BooleanLiteral(Token Token, bool Value) : Node(Token), IExpression
 {
     public override string ToString() => Value ? "true" : "false";

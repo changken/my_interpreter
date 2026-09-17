@@ -83,6 +83,11 @@ public sealed class Lexer
             return ScanString(line, column);
         }
 
+        if (c == '\'')
+        {
+            return ScanChar(line, column);
+        }
+
         return ScanOperatorOrDelimiter(line, column);
     }
 
@@ -239,7 +244,7 @@ public sealed class Lexer
 
             if (c == '\\')
             {
-                if (!TryScanEscape(decoded))
+                if (!TryScanEscape(decoded, '"'))
                 {
                     return new Token(TokenType.Illegal, decoded.ToString(), line, column);
                 }
@@ -251,8 +256,45 @@ public sealed class Lexer
         }
     }
 
-    // 未知 escape、或 '\' 後面直接是換行/EOF，都不得靜默放行：回傳 false 讓 ScanString 中止整段掃描。
-    private bool TryScanEscape(StringBuilder decoded)
+    // 比照 ScanString：吃到閉合的 '\'' 才判斷是否恰好一個字元，未閉合 / 未知 escape 一律 Illegal。
+    // 多字元（'ab'）也走同一個迴圈，會一路吃到閉合的 '\'' 才發現 decoded.Length != 1。
+    private Token ScanChar(int line, int column)
+    {
+        Advance(); // 吃掉開頭的 '\''
+        StringBuilder decoded = new();
+
+        while (true)
+        {
+            if (Peek() is null or '\r' or '\n')
+            {
+                return new Token(TokenType.Illegal, decoded.ToString(), line, column);
+            }
+
+            char c = Advance();
+            if (c == '\'')
+            {
+                return decoded.Length == 1
+                    ? new Token(TokenType.Char, decoded.ToString(), line, column)
+                    : new Token(TokenType.Illegal, decoded.ToString(), line, column);
+            }
+
+            if (c == '\\')
+            {
+                if (!TryScanEscape(decoded, '\''))
+                {
+                    return new Token(TokenType.Illegal, decoded.ToString(), line, column);
+                }
+
+                continue;
+            }
+
+            decoded.Append(c);
+        }
+    }
+
+    // 未知 escape、或 '\' 後面直接是換行/EOF，都不得靜默放行：回傳 false 讓呼叫端中止整段掃描。
+    // quoteChar 是該字面量自己的引號字元：String 傳 '"'（\" 合法）、Char 傳 '\''（\' 合法），彼此不互通。
+    private bool TryScanEscape(StringBuilder decoded, char quoteChar)
     {
         if (Peek() is null or '\r' or '\n')
         {
@@ -265,8 +307,8 @@ public sealed class Lexer
             'n' => '\n',
             't' => '\t',
             '\\' => '\\',
-            '"' => '"',
             '0' => '\0',
+            _ when escaped == quoteChar => quoteChar,
             _ => null,
         };
 

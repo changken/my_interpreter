@@ -39,6 +39,21 @@ public class ParserLiteralTests
     }
 
     [Theory]
+    [InlineData("'a'", 'a')]
+    [InlineData(@"'\n'", '\n')]
+    [InlineData(@"'\t'", '\t')]
+    [InlineData(@"'\\'", '\\')]
+    [InlineData(@"'\''", '\'')]
+    [InlineData(@"'\0'", '\0')]
+    public void ParseProgram_CharLiteral_ProducesCharNodeWithValue(string input, char expected)
+    {
+        CharLiteral node = Assert.IsType<CharLiteral>(ParserTestHelper.ParseExpression(input));
+
+        Assert.Equal(expected, node.Value);
+        Assert.Equal(input, node.ToString());
+    }
+
+    [Theory]
     [InlineData("true", true)]
     [InlineData("false", false)]
     public void ParseProgram_BooleanLiteral_ProducesBooleanNode(string input, bool expected)

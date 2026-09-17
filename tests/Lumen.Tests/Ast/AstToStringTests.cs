@@ -60,6 +60,20 @@ public class AstToStringTests
     }
 
     [Theory]
+    [InlineData('a', "'a'")]
+    [InlineData('\'', "'\\''")]
+    [InlineData('\\', "'\\\\'")]
+    [InlineData('\n', "'\\n'")]
+    [InlineData('\t', "'\\t'")]
+    [InlineData('\0', "'\\0'")]
+    public void ToString_CharLiteral_ReEscapesValue(char value, string expected)
+    {
+        CharLiteral node = new(Tok(TokenType.Char, value.ToString()), value);
+
+        Assert.Equal(expected, node.ToString());
+    }
+
+    [Theory]
     [InlineData(true, "true")]
     [InlineData(false, "false")]
     public void ToString_BooleanLiteral_PrintsKeyword(bool value, string expected)

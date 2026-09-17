@@ -28,6 +28,14 @@ public class EvaluatorLiteralTests
     }
 
     [Theory]
+    [InlineData("'a'", 'a')]
+    [InlineData(@"'\n'", '\n')]
+    public void Eval_CharLiteral_ProducesCharValue(string input, char expected)
+    {
+        Assert.Equal(new CharValue(expected), EvalTestHelper.Eval(input));
+    }
+
+    [Theory]
     [InlineData("true", true)]
     [InlineData("false", false)]
     public void Eval_BooleanLiteral_ProducesSharedBoolValue(string input, bool expected)
@@ -67,6 +75,7 @@ public class EvaluatorLiteralTests
     [InlineData("{[1]: 1}", "unusable as hash key: Array")]
     [InlineData("{{}: 1}", "unusable as hash key: Hash")]
     [InlineData("{null: 1}", "unusable as hash key: Null")]
+    [InlineData("{'a': 1}", "unusable as hash key: Char")]
     public void Eval_HashLiteralWithInvalidKey_ProducesError(string input, string expected)
     {
         EvalTestHelper.AssertError(expected, input);

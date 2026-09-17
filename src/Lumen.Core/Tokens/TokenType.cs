@@ -10,6 +10,7 @@ public enum TokenType
     Int,
     Float,
     String,
+    Char,
 
     // Keywords
     Let,

@@ -68,11 +68,37 @@ public class EvaluatorIndexTests
     }
 
     [Theory]
-    [InlineData("\"abc\"[0]", "index operator not supported: String")]
     [InlineData("1[0]", "index operator not supported: Int")]
     [InlineData("null[0]", "index operator not supported: Null")]
     [InlineData("fn() { }[0]", "index operator not supported: Function")]
     public void Eval_IndexOnUnsupportedType_ProducesError(string input, string expected)
+    {
+        EvalTestHelper.AssertError(expected, input);
+    }
+
+    [Theory]
+    [InlineData("\"abc\"[0]", 'a')]
+    [InlineData("\"abc\"[2]", 'c')]
+    [InlineData("let s := \"abc\"; s[1]", 'b')]
+    public void Eval_StringIndex_ReturnsChar(string input, char expected)
+    {
+        Assert.Equal(new CharValue(expected), EvalTestHelper.Eval(input));
+    }
+
+    [Theory]
+    [InlineData("\"abc\"[3]", "index out of range: 3")]
+    [InlineData("\"abc\"[-1]", "index out of range: -1")]
+    [InlineData("\"\"[0]", "index out of range: 0")]
+    public void Eval_StringIndexOutOfRange_ProducesError(string input, string expected)
+    {
+        EvalTestHelper.AssertError(expected, input);
+    }
+
+    [Theory]
+    [InlineData("\"abc\"[\"a\"]", "string index must be Int, got String")]
+    [InlineData("\"abc\"[1.0]", "string index must be Int, got Float")]
+    [InlineData("\"abc\"[true]", "string index must be Int, got Bool")]
+    public void Eval_StringIndexWithNonInt_ProducesError(string input, string expected)
     {
         EvalTestHelper.AssertError(expected, input);
     }

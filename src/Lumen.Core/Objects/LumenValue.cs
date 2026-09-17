@@ -93,6 +93,32 @@ public sealed record StringValue(string Value) : LumenValue
     }
 }
 
+// 可排序但不參與數值運算（不進 Numeric.cs）；record 預設 equality 已足夠，同 Int / String。
+public sealed record CharValue(char Value) : LumenValue
+{
+    public override string TypeName => "Char";
+
+    public override string Inspect() => Value.ToString();
+
+    internal override string InspectNested()
+    {
+        StringBuilder sb = new(3);
+        sb.Append('\'');
+        switch (Value)
+        {
+            case '\\': sb.Append("\\\\"); break;
+            case '\'': sb.Append("\\'"); break;
+            case '\n': sb.Append("\\n"); break;
+            case '\t': sb.Append("\\t"); break;
+            case '\0': sb.Append("\\0"); break;
+            default: sb.Append(Value); break;
+        }
+
+        sb.Append('\'');
+        return sb.ToString();
+    }
+}
+
 // record 對 IReadOnlyList 只會做 reference 比較，所以手動改成逐元素 structural 比較。
 public sealed record ArrayValue(IReadOnlyList<LumenValue> Elements) : LumenValue
 {

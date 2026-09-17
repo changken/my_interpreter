@@ -1,0 +1,17 @@
+let a := 'a';
+let b := 'b';
+puts(a);                     // expect: a
+puts(a < b);                  // expect: true
+puts(b > a);                   // expect: true
+puts(a <= a);                   // expect: true
+puts(a >= b);                    // expect: false
+puts(a == 'a');                   // expect: true
+puts(a != b);                      // expect: true
+
+let escapes := ['\n', '\t', '\\', '\'', '\0'];
+puts(escapes);                       // expect: ['\n', '\t', '\\', '\'', '\0']
+puts('\n' == '\n');                   // expect: true
+
+puts("before error");                  // expect: before error
+puts('a' + 1);
+// expect-error: type mismatch: Char + Int

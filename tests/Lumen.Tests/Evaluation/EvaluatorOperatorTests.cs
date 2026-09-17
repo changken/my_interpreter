@@ -37,6 +37,18 @@ public class EvaluatorOperatorTests
     }
 
     [Theory]
+    [InlineData("'a' < 'b'", true)]
+    [InlineData("'b' < 'a'", false)]
+    [InlineData("'a' > 'b'", false)]
+    [InlineData("'a' <= 'a'", true)]
+    [InlineData("'b' >= 'a'", true)]
+    [InlineData("'b' >= 'c'", false)]
+    public void Eval_CharComparison_ProducesBool(string input, bool expected)
+    {
+        EvalTestHelper.AssertBool(expected, input);
+    }
+
+    [Theory]
     [InlineData("1 == 1", true)]
     [InlineData("1 == 1.0", true)]
     [InlineData("1.0 == 1", true)]
@@ -50,6 +62,8 @@ public class EvaluatorOperatorTests
     [InlineData("[1, 2] == [1, 2]", true)]
     [InlineData("[1, 2] == [2, 1]", false)]
     [InlineData("{\"a\": 1} == {\"a\": 1}", true)]
+    [InlineData("'a' == 'a'", true)]
+    [InlineData("'a' != 'b'", true)]
     public void Eval_EqualityOnSameKind_ComparesValues(string input, bool expected)
     {
         EvalTestHelper.AssertBool(expected, input);
@@ -62,6 +76,8 @@ public class EvaluatorOperatorTests
     [InlineData("null == 0", false)]
     [InlineData("[1] == 1", false)]
     [InlineData("null != false", true)]
+    [InlineData("'a' == \"a\"", false)]
+    [InlineData("'a' == 97", false)]
     public void Eval_EqualityAcrossKinds_IsFalseNotError(string input, bool expected)
     {
         EvalTestHelper.AssertBool(expected, input);
@@ -88,7 +104,18 @@ public class EvaluatorOperatorTests
     [InlineData("1 + \"a\"", "type mismatch: Int + String")]
     [InlineData("\"a\" * 2", "type mismatch: String * Int")]
     [InlineData("\"a\" + null", "type mismatch: String + Null")]
+    [InlineData("\"a\" + 'b'", "type mismatch: String + Char")]
     public void Eval_StringWithNonString_ProducesError(string input, string expected)
+    {
+        EvalTestHelper.AssertError(expected, input);
+    }
+
+    [Theory]
+    [InlineData("'a' + 'b'", "type mismatch: Char + Char")]
+    [InlineData("'a' - 1", "type mismatch: Char - Int")]
+    [InlineData("-'a'", "unknown operator: -Char")]
+    [InlineData("!'a'", "unknown operator: !Char")]
+    public void Eval_CharUnsupportedOperators_ProducesError(string input, string expected)
     {
         EvalTestHelper.AssertError(expected, input);
     }

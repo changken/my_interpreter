@@ -1,0 +1,12 @@
+let s := "abc";
+puts(s[0]);                 // expect: a
+puts(s[2]);                  // expect: c
+puts(s[0] == 'a');            // expect: true
+puts(len(s));                  // expect: 3
+
+let word := "hé";
+puts(word[1] == 'é');           // expect: true
+
+puts("before error");            // expect: before error
+puts(s[5]);
+// expect-error: index out of range: 5

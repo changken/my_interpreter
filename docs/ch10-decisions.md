@@ -1,0 +1,8 @@
+# Ch10 Char — Decisions
+
+- `ScanChar` 完全比照 `ScanString` 的迴圈結構（吃到終止字元才判斷、未閉合/未知 escape 立刻中止），差別只在收尾判斷：吃到閉合的 `'` 時檢查 `decoded.Length == 1`，`''`（空）與 `'ab'`（多字元）都落在這個檢查上變成 Illegal，不需要另外的分支。`TryScanEscape` 加一個 `quoteChar` 參數（String 傳 `"`、Char 傳 `'`）取代原本寫死的 `'"' => '"'`，讓兩邊共用同一份 escape 表又不互通：`\"` 在 char 裡、`\'` 在字串裡都還是未知 escape，String 既有測試不受影響。
+- `CharValue` 用 record 預設 equality（`char` 是 primitive，不像 Array/Function 需要手動 override），`InspectNested()` 印 `'a'`、`Inspect()` 印裸字元，兩者的跳脫規則直接複製 `StringLiteral.ToString()` / `StringValue.InspectNested()` 那段 switch，只是引號换成 `'`。
+- `EvalInfix` 在 Numeric 分支之後、`==`/`!=` 泛型分支之前插入一段「兩邊都是 CharValue 才處理 `< > <= >=`」；`==`/`!=` 不在這裡攔截，直接落到既有的泛型 value equality（`CharValue` 的 record equality 已經對）。`+` `-` 等其他運算子與跨型別比較（`'a' < 1`）完全沒攔，自然掉到最後的 `TypeMismatch`。Char 沒有進 `Numeric.cs`，`EvalPrefix` 的 `!` / `-` 也零改動——`Numeric.Negate` 本來就只認 Int/Float，其餘一律 `UnknownPrefix`。
+- `EvalIndex` 加 `(StringValue, IntValue)` 與 `(StringValue, _)` 兩個 case，錯誤訊息比照 Array 那組的命名慣例：越界訊息完全複用 `$"index out of range: {i.Inspect()}"`（與 Array 共用同一句，不分型別），非 Int 索引訊息仿造 `array index must be Int` 造出 `string index must be Int, got {type}`（plan 未明講這句的措辭，屬於實作細節自行決定）。越界判斷以 `.Length`（UTF-16 code unit）為單位，與 `len()` 的已知簡化一致。
+- 明確沒做（plan 定案）：Char 不能當 hash key（`HashValue.IsValidKey` 沒加 `CharValue`，本來就會自然落空，零改動即符合）；`String + Char` 不合法（`+` 的 String 分支只認 `StringValue, StringValue`，Char 那邊自然掉到 `TypeMismatch`）。
+- Conformance：`ch10-char-literals.lumen`（literal、比較、相等、escape、放進 array 印出的巢狀跳脫、`Char + Int` 錯誤收尾）、`ch10-string-index-char.lumen`（`s[i]` 回 Char、`len` 不變、多位元組字元 `"hé"` 的 UTF-16 索引、越界錯誤收尾）。malformed literal（`''` / `'ab'` / 未閉合 / 未知 escape）都是 lexer 層的問題，只放在 `LexerCharTests.cs` 當 unit test，沒有另開 conformance script。

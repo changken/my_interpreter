@@ -230,6 +230,7 @@ public sealed class Evaluator
         IntegerLiteral n => new IntValue(n.Value),
         FloatLiteral n => new FloatValue(n.Value),
         StringLiteral n => new StringValue(n.Value),
+        CharLiteral n => new CharValue(n.Value),
         BooleanLiteral n => BoolValue.Of(n.Value),
         NullLiteral => NullValue.Instance,
         Identifier n => EvalIdentifier(n, env),
@@ -267,6 +268,12 @@ public sealed class Evaluator
                     : Error.At(node.Token, $"index out of range: {i.Inspect()}");
             case (ArrayValue, _):
                 return Error.At(node.Token, $"array index must be Int, got {index.TypeName}");
+            case (StringValue str, IntValue i):
+                return i.Value >= 0 && i.Value < str.Value.Length
+                    ? new CharValue(str.Value[(int)i.Value])
+                    : Error.At(node.Token, $"index out of range: {i.Inspect()}");
+            case (StringValue, _):
+                return Error.At(node.Token, $"string index must be Int, got {index.TypeName}");
             case (HashValue hash, _):
                 if (!HashValue.IsValidKey(index))
                 {
@@ -327,6 +334,19 @@ public sealed class Evaluator
         if (Numeric.IsNumeric(left) && Numeric.IsNumeric(right))
         {
             return Numeric.Infix(node.Token, left, right);
+        }
+
+        // Char 可排序但不進 Numeric：只接住 < > <= >=，== / != 落到下面的泛型 value equality，
+        // 其餘運算子（+ - 等）自然掉到最後的 TypeMismatch。
+        if (left is CharValue lc && right is CharValue rc)
+        {
+            switch (node.Operator)
+            {
+                case TokenType.Lt: return BoolValue.Of(lc.Value < rc.Value);
+                case TokenType.Gt: return BoolValue.Of(lc.Value > rc.Value);
+                case TokenType.LtEq: return BoolValue.Of(lc.Value <= rc.Value);
+                case TokenType.GtEq: return BoolValue.Of(lc.Value >= rc.Value);
+            }
         }
 
         // 非數值的 == / != 用 value equality；型別不同就是 false，不報錯。
