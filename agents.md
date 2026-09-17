@@ -157,6 +157,7 @@ let x := 5;
 let pi := 3.14;
 let name := "ken";
 x := x + 1;                        // 賦值
+x += 1;                            // 複合賦值：+= -= *= /=（目標限變數）
 
 fn add(a, b) { return a + b; }
 let double := fn(n) { n * 2 };     // 無 return 時，最後一個 expression 為回傳值
@@ -182,7 +183,7 @@ puts(len(arr));
 
 **Infix operators**：`||` `&&` `==` `!=` `<` `>` `<=` `>=` `+` `-` `*` `/` `%` `**`
 
-**Two-char tokens**：`:=` `==` `!=` `<=` `>=` `&&` `||` `**` `//`
+**Two-char tokens**：`:=` `==` `!=` `<=` `>=` `&&` `||` `**` `//` `+=` `-=` `*=` `/=`
 
 ---
 
@@ -621,6 +622,15 @@ PR 未全綠不得 merge。
 - [x] **Ch6 Evaluator: Expressions** — prefix / infix / numeric promotion / short-circuit / 除零與 overflow
 - [x] **Ch7 Evaluator: Statements & Functions** — 控制流、signal 傳播、call depth 限制、function value、closure capture
 - [x] **Ch8 Errors, Builtins & Composites** — BuiltinRegistry、`len` `first` `rest` `push` `puts`、array / hash / index / string、CLI
+
+v1（規劃與各章設計見 `docs/ch9-ch14-plan.md`；仍然一次一章）：
+
+- [x] **Ch9 Compound Assignment** — `+=` `-=` `*=` `/=`，parser desugar 成 `x := x op e`，目標限 identifier
+- [ ] **Ch10 Char** — `'a'` literal、`CharValue`（可比較大小、不參與數值運算）、`"abc"[0]` 回 Char
+- [ ] **Ch11 String / Array Builtins** — 純資料進出：`upper` `lower` `trim` `split` `join` `contains` `reverse` `last`（stretch：`indexOf` `slice` `replace` `concat` `sort`）
+- [ ] **Ch12 Class I** — `class Name { fields }`、`new`、`obj.field` 唯讀；instance 建構後不可變
+- [ ] **Ch13 Class II** — class body 內的 `fn` method、`this`、`obj.method()`（bound `FunctionValue`，走既有 `CallFunction`）
+- [ ] **Ch14（選配，開工前需另行確認）** — `this.field := v` 可變欄位
 
 ---
 

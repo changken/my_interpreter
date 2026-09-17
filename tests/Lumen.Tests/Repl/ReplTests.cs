@@ -32,7 +32,13 @@ public class ReplTests
     [Fact]
     public void Run_NonExpressionStatements_PrintNothing()
     {
-        Assert.Empty(RunLines("let x := 1;\nx := 2;\nwhile (false) { }\n"));
+        Assert.Empty(RunLines("let x := 1;\nx := 2;\nx += 1;\nwhile (false) { }\n"));
+    }
+
+    [Fact]
+    public void Run_CompoundAssign_UpdatesBindingAcrossLines()
+    {
+        Assert.Equal(["3"], RunLines("let x := 1;\nx += 2;\nx\n"));
     }
 
     [Fact]

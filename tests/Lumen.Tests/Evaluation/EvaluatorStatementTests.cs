@@ -31,6 +31,66 @@ public class EvaluatorStatementTests
         EvalTestHelper.AssertError("undefined variable: y", "y := 1;");
     }
 
+    [Theory]
+    [InlineData("let x := 1; x += 2; x", 3L)]
+    [InlineData("let x := 5; x -= 2; x", 3L)]
+    [InlineData("let x := 3; x *= 4; x", 12L)]
+    [InlineData("let x := 7; x /= 2; x", 3L)]
+    [InlineData("let x := 1; x += 1; x += 1; x", 3L)]
+    [InlineData("let x := 2; x *= x; x", 4L)]
+    [InlineData("let x := 10; x -= x / 2; x", 5L)]
+    [InlineData("let x := 2; x *= 1 + 2; x", 6L)]
+    [InlineData("let x := 8; x /= 2 * 2; x", 2L)]
+    [InlineData("let x := 1; let f := fn() { x := 10; return 1; }; x += f(); x", 2L)]
+    public void Eval_CompoundAssign_UpdatesBindingLikeAssignWithInfix(string input, long expected)
+    {
+        EvalTestHelper.AssertInt(expected, input);
+    }
+
+    [Theory]
+    [InlineData("let x := 5.0; x /= 2; x", 2.5)]
+    [InlineData("let x := 1; x += 2.5; x", 3.5)]
+    public void Eval_CompoundAssign_PromotesToFloat(string input, double expected)
+    {
+        EvalTestHelper.AssertFloat(expected, input);
+    }
+
+    [Fact]
+    public void Eval_CompoundPlusAssignOnStrings_Concatenates()
+    {
+        EvalTestHelper.AssertString("ab", "let s := \"a\"; s += \"b\"; s");
+    }
+
+    [Fact]
+    public void Eval_CompoundAssignStatement_ProducesNull()
+    {
+        EvalTestHelper.AssertNull("let x := 1; x += 1;");
+    }
+
+    [Fact]
+    public void Eval_CompoundAssignInsideClosure_UpdatesCapturedBinding()
+    {
+        EvalTestHelper.AssertInt(3, "let x := 1; let f := fn() { x += 1; }; f(); f(); x");
+    }
+
+    [Theory]
+    [InlineData("y += 1;", "undefined variable: y")]
+    [InlineData("let s := \"a\"; s -= \"b\";", "type mismatch: String - String")]
+    [InlineData("let x := 1; x += \"a\";", "type mismatch: Int + String")]
+    [InlineData("let x := 1; x /= 0;", "division by zero")]
+    [InlineData("let x := 1; x += 1 / 0;", "division by zero")]
+    [InlineData("let x := 9223372036854775807; x += 1;", "integer overflow")]
+    public void Eval_CompoundAssign_ReportsSameErrorsAsInfix(string input, string expectedFragment)
+    {
+        EvalTestHelper.AssertError(expectedFragment, input);
+    }
+
+    [Fact]
+    public void Eval_CompoundAssignTypeError_PointsAtOperator()
+    {
+        EvalTestHelper.AssertError("[line 2:3] type mismatch: String - Int", "let s := \"a\";\ns -= 1;");
+    }
+
     [Fact]
     public void Eval_AssignToUndefined_DoesNotDefineIt()
     {

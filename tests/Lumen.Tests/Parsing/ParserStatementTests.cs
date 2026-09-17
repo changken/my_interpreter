@@ -1,4 +1,5 @@
 using Lumen.Core.Ast;
+using Lumen.Core.Tokens;
 
 namespace Lumen.Tests.Parsing;
 
@@ -27,6 +28,36 @@ public class ParserStatementTests
 
         Assert.Equal("x", node.Name.Name);
         Assert.Equal("x := (x + 1);", node.ToString());
+    }
+
+    [Theory]
+    [InlineData("x += 1;", "x := (x + 1);")]
+    [InlineData("x -= 1;", "x := (x - 1);")]
+    [InlineData("x *= 2;", "x := (x * 2);")]
+    [InlineData("x /= 2;", "x := (x / 2);")]
+    [InlineData("x += y * 2;", "x := (x + (y * 2));")]
+    [InlineData("x -= -1;", "x := (x - (-1));")]
+    [InlineData("x *= 1 + 2;", "x := (x * (1 + 2));")]
+    [InlineData("x /= 2 * 2;", "x := (x / (2 * 2));")]
+    [InlineData("x += a && b;", "x := (x + (a && b));")]
+    public void ParseProgram_CompoundAssignStatement_DesugarsToAssignWithInfix(string input, string expected)
+    {
+        AssignStatement node = Assert.IsType<AssignStatement>(ParseSingle(input));
+
+        Assert.Equal("x", node.Name.Name);
+        InfixExpression infix = Assert.IsType<InfixExpression>(node.Value);
+        Assert.Equal("x", Assert.IsType<Identifier>(infix.Left).Name);
+        Assert.Equal(expected, node.ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_CompoundAssignStatement_SyntheticOperatorTokenKeepsPositionAndBareLiteral()
+    {
+        AssignStatement node = Assert.IsType<AssignStatement>(ParseSingle("x -= 1;"));
+
+        InfixExpression infix = Assert.IsType<InfixExpression>(node.Value);
+        Assert.Equal(TokenType.Minus, infix.Operator);
+        Assert.Equal(new Token(TokenType.Minus, "-", 1, 3), infix.Token);
     }
 
     [Fact]
@@ -111,6 +142,8 @@ public class ParserStatementTests
     [InlineData("for (; x < 3; ) { }", "for (; (x < 3); ) { }")]
     [InlineData("for (i := 0; ; i := i + 1) { break; }", "for (i := 0; ; i := (i + 1)) { break; }")]
     [InlineData("for (f(); c; g()) { }", "for (f(); c; g()) { }")]
+    [InlineData("for (let i := 0; i < 3; i += 1) { }", "for (let i := 0; (i < 3); i := (i + 1)) { }")]
+    [InlineData("for (i -= 1; i > 0; i /= 2) { }", "for (i := (i - 1); (i > 0); i := (i / 2)) { }")]
     public void ParseProgram_ForStatement_ClausesAreOptional(string input, string expected)
     {
         ForStatement node = Assert.IsType<ForStatement>(ParseSingle(input));

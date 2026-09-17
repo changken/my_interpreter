@@ -28,6 +28,9 @@ public class EvaluatorLoopTests
     [InlineData("let n := 0; for (n := 1; n < 4; n := n + 1) { } n", 4L)]
     [InlineData("let c := 0; for (let i := 0; i < 10; i := i + 1) { i := i + 1; c := c + 1; } c", 5L)]
     [InlineData("let c := 0; for (let i := 0; i < 2; i := i + 1) { for (let j := 0; j < 3; j := j + 1) { if (j == 1) { break; } c := c + 1; } } c", 2L)]
+    [InlineData("let s := 0; for (let i := 0; i < 5; i += 1) { s += i; } s", 10L)]
+    [InlineData("let s := 0; for (let i := 0; i < 5; i += 1) { if (i == 2) { continue; } s += i; } s", 8L)]
+    [InlineData("let i := 0; let s := 0; for (i += 1; i < 4; i += 1) { s += i; } s", 6L)]
     public void Eval_ForLoop_RunsClausesInOrder(string input, long expected)
     {
         EvalTestHelper.AssertInt(expected, input);

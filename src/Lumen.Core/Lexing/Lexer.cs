@@ -295,10 +295,10 @@ public sealed class Lexer
             '>' => Match('=') ? TokenType.GtEq : TokenType.Gt,
             '&' => Match('&') ? TokenType.And : TokenType.Illegal,      // 沒有位元運算，落單的 '&' 不合法
             '|' => Match('|') ? TokenType.Or : TokenType.Illegal,       // 同上
-            '*' => Match('*') ? TokenType.StarStar : TokenType.Star,
-            '/' => TokenType.Slash, // `//` 已經在 SkipTrivia() 被當成註解處理掉了，走到這裡一定是除法
-            '+' => TokenType.Plus,
-            '-' => TokenType.Minus,
+            '*' => Match('*') ? TokenType.StarStar : Match('=') ? TokenType.StarEq : TokenType.Star,
+            '/' => Match('=') ? TokenType.SlashEq : TokenType.Slash, // `//` 已經在 SkipTrivia() 被當成註解處理掉了
+            '+' => Match('=') ? TokenType.PlusEq : TokenType.Plus,
+            '-' => Match('=') ? TokenType.MinusEq : TokenType.Minus,
             '%' => TokenType.Percent,
             ',' => TokenType.Comma,
             ';' => TokenType.Semicolon,

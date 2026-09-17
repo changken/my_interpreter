@@ -147,7 +147,7 @@ public sealed class Parser
                 return ParseWhileStatement();
             case TokenType.For:
                 return ParseForStatement();
-            case TokenType.Ident when PeekNext.Type == TokenType.Assign:
+            case TokenType.Ident when IsAssignOperator(PeekNext.Type):
                 return Terminated(ParseAssignStatement());
             default:
                 return ParseExpressionStatement();
@@ -163,7 +163,7 @@ public sealed class Parser
         return Current.Type switch
         {
             TokenType.Let when allowLet => ParseLetStatement(),
-            TokenType.Ident when PeekNext.Type == TokenType.Assign => ParseAssignStatement(),
+            TokenType.Ident when IsAssignOperator(PeekNext.Type) => ParseAssignStatement(),
             _ => ParseBareExpressionStatement(),
         };
     }
@@ -181,18 +181,51 @@ public sealed class Parser
         return value is null ? null : new LetStatement(token, name, value);
     }
 
+    // `x += e` 之類的複合賦值直接 desugar 成 `x := x + e`：求值語意、錯誤種類、位置回報都與一般 infix 相同，
+    // 所以不另設 AST node，evaluator 也零改動。
     private AssignStatement? ParseAssignStatement()
     {
         Token token = Current;
         Identifier? name = ExpectIdentifier();
-        if (name is null || !Expect(TokenType.Assign))
+        if (name is null)
         {
             return null;
         }
 
+        if (!IsAssignOperator(Current.Type))
+        {
+            AddError($"expected {Describe(TokenType.Assign)} but found {Display(Current)}", Current);
+            return null;
+        }
+
+        Token op = Advance();
         IExpression? value = ParseExpression(Precedence.Lowest);
-        return value is null ? null : new AssignStatement(token, name, value);
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (CompoundAssignOperator(op.Type) is (TokenType infix, string literal))
+        {
+            // 合成的運算子 token 沿用 `+=` 的位置，Literal 換成裸運算子，錯誤訊息才會是 `String - Int` 而非 `String -= Int`。
+            Token synthetic = new(infix, literal, op.Line, op.Column);
+            value = new InfixExpression(synthetic, name, infix, value);
+        }
+
+        return new AssignStatement(token, name, value);
     }
+
+    private static bool IsAssignOperator(TokenType type) =>
+        type == TokenType.Assign || CompoundAssignOperator(type) is not null;
+
+    private static (TokenType Operator, string Literal)? CompoundAssignOperator(TokenType type) => type switch
+    {
+        TokenType.PlusEq => (TokenType.Plus, "+"),
+        TokenType.MinusEq => (TokenType.Minus, "-"),
+        TokenType.StarEq => (TokenType.Star, "*"),
+        TokenType.SlashEq => (TokenType.Slash, "/"),
+        _ => null,
+    };
 
     // `fn add(a, b) { ... }` 是 `let add := fn(a, b) { ... };` 的語法糖；Name 記在 literal 上供之後 call stack 使用。
     private LetStatement? ParseFunctionDeclaration()
@@ -334,8 +367,8 @@ public sealed class Parser
             return null;
         }
 
-        // 只有 `ident := expr` 會走 AssignStatement；其他任何運算式後面接 `:=` 都不是合法的賦值目標。
-        if (Current.Type == TokenType.Assign)
+        // 只有 `ident := expr` / `ident += expr` 會走 AssignStatement；其他運算式後面接賦值運算子都不是合法的賦值目標。
+        if (IsAssignOperator(Current.Type))
         {
             AddError("invalid assignment target", Current);
             return null;

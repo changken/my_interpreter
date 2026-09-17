@@ -115,6 +115,14 @@ public class ParserErrorTests
     [InlineData("if (x) { continue; }", "'continue' outside of loop")]
     [InlineData("arr[0] := 1;", "invalid assignment target")]
     [InlineData("a + b := 1;", "invalid assignment target")]
+    [InlineData("arr[0] += 1;", "invalid assignment target")]
+    [InlineData("a + b -= 1;", "invalid assignment target")]
+    [InlineData("1 *= 2;", "invalid assignment target")]
+    [InlineData("f() /= 2;", "invalid assignment target")]
+    [InlineData("x += ;", "unexpected token ';'")]
+    [InlineData("x += 1", "expected ';' but found end of input")]
+    [InlineData("x %= 2;", "illegal token '='")]
+    [InlineData("x **= 2;", "illegal token '='")]
     [InlineData("while (x) x := 1;", "expected '{' but found 'x'")]
     [InlineData("while x { }", "expected '(' but found 'x'")]
     [InlineData("for (let i := 0 i < 3; ) { }", "expected ';' but found 'i'")]
@@ -153,6 +161,15 @@ public class ParserErrorTests
 
         Assert.Single(errors);
         Assert.Equal("let y := 6;", Assert.Single(program.Statements).ToString());
+    }
+
+    [Fact]
+    public void ParseProgram_MalformedCompoundAssign_RecordsOneErrorAndRecoversAtNextStatement()
+    {
+        (Program program, IReadOnlyList<ParseError> errors) = ParserTestHelper.Parse("x += ; let y := 1;");
+
+        Assert.Single(errors);
+        Assert.Equal("let y := 1;", Assert.Single(program.Statements).ToString());
     }
 
     [Fact]

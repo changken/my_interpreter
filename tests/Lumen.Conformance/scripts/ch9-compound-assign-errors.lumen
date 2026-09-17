@@ -1,0 +1,6 @@
+let s := "a";
+s += "b";
+puts(s);            // expect: ab
+s -= "b";
+puts("unreachable");
+// expect-error: type mismatch: String - String

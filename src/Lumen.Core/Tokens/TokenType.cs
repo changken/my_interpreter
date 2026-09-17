@@ -27,6 +27,10 @@ public enum TokenType
 
     // Operators
     Assign,     // :=
+    PlusEq,     // +=
+    MinusEq,    // -=
+    StarEq,     // *=
+    SlashEq,    // /=
     Plus,       // +
     Minus,      // -
     Star,       // *
