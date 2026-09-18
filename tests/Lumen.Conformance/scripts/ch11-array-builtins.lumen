@@ -1,0 +1,14 @@
+puts(contains([1, 2, 3], 2));      // expect: true
+puts(contains([1, 2, 3], 9));       // expect: false
+puts(reverse([1, 2, 3]));            // expect: [3, 2, 1]
+puts(last([1, 2, 3]));                // expect: 3
+puts(last([]));                        // expect: null
+
+let a := [1, 2, 3];
+let b := reverse(a);
+puts(a);                                // expect: [1, 2, 3]
+puts(b);                                 // expect: [3, 2, 1]
+
+puts("before error");                     // expect: before error
+puts(join([1, 2], "-"));
+// expect-error: argument to join: array element must be String, got Int

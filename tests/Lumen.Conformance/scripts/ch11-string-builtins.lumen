@@ -1,0 +1,14 @@
+puts(upper("hello"));                  // expect: HELLO
+puts(lower("WORLD"));                   // expect: world
+puts(trim("  hi  "));                    // expect: hi
+puts(split("a,b,c", ","));                // expect: ["a", "b", "c"]
+puts(join(["a", "b", "c"], "-"));          // expect: a-b-c
+puts(contains("hello", "ell"));             // expect: true
+puts(contains("hello", "xyz"));              // expect: false
+puts(reverse("abc"));                         // expect: cba
+puts(last("abc"));                             // expect: c
+puts(last(""));                                 // expect: null
+
+puts("before error");                            // expect: before error
+puts(split("a,b", ""));
+// expect-error: second argument to split must not be empty

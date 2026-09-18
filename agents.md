@@ -627,7 +627,8 @@ v1（規劃與各章設計見 `docs/ch9-ch14-plan.md`；仍然一次一章）：
 
 - [x] **Ch9 Compound Assignment** — `+=` `-=` `*=` `/=`，parser desugar 成 `x := x op e`，目標限 identifier
 - [x] **Ch10 Char** — `'a'` literal、`CharValue`（可比較大小、不參與數值運算）、`"abc"[0]` 回 Char
-- [ ] **Ch11 String / Array Builtins** — 純資料進出：`upper` `lower` `trim` `split` `join` `contains` `reverse` `last`（stretch：`indexOf` `slice` `replace` `concat` `sort`）
+- [x] **Ch11 String / Array Builtins** — 純資料進出：`upper` `lower` `trim` `split` `join` `contains` `reverse` `last`
+- [ ] **Ch11b String / Array Builtins（stretch，開工前需另行確認）** — `indexOf` `slice` `replace` `concat` `sort`（含 `Evaluation/Ordering.cs`），從 Ch11 拆出以免單章 diff 超過 500 行
 - [ ] **Ch12 Class I** — `class Name { fields }`、`new`、`obj.field` 唯讀；instance 建構後不可變
 - [ ] **Ch13 Class II** — class body 內的 `fn` method、`this`、`obj.method()`（bound `FunctionValue`，走既有 `CallFunction`）
 - [ ] **Ch14（選配，開工前需另行確認）** — `this.field := v` 可變欄位

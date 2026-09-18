@@ -109,6 +109,8 @@ public class BuiltinTests
     {
         Lumen.Core.Evaluation.BuiltinRegistry registry = Lumen.Core.Evaluation.Builtins.CreateDefault(TextWriter.Null);
 
-        Assert.Equal(["first", "len", "push", "puts", "rest"], registry.Names.Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["contains", "first", "join", "last", "len", "lower", "push", "puts", "rest", "reverse", "split", "trim", "upper"],
+            registry.Names.Order(StringComparer.Ordinal));
     }
 }
